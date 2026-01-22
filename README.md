@@ -436,16 +436,12 @@ Connectez-vous à l'interface web de pfSense et accédez au menu :
 
 Cliquez sur le bouton **Add** pour ajouter un nouveau serveur d'authentification.
 
-<img width="1143" height="851" alt="image" src="https://github.com/user-attachments/assets/beb66308-2b22-499b-bb3d-9fc01e28dc60" />
-
 ### Étape 2 : Configuration du serveur RADIUS
 
 Dans la zone **Server Settings**, effectuez la configuration suivante :
 
 **Descriptive name:** RADIUS  
 **Type:** RADIUS
-
-![Configuration serveur RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-freeradius.webp)
 
 Dans la zone **RADIUS Server Settings**, effectuez la configuration suivante :
 
@@ -457,7 +453,7 @@ Dans la zone **RADIUS Server Settings**, effectuez la configuration suivante :
 **Accounting port:** 1813  
 **Authentication Timeout:** 5
 
-![Paramètres du serveur RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-radius-server-settings.webp)
+<img width="1143" height="851" alt="image" src="https://github.com/user-attachments/assets/beb66308-2b22-499b-bb3d-9fc01e28dc60" />
 
 **Important :** Remplacez l'adresse IP par celle de votre serveur FreeRADIUS et le secret partagé par celui que vous avez défini dans `/etc/freeradius/3.0/clients.conf`.
 
@@ -467,72 +463,11 @@ Cliquez sur **Save** pour enregistrer la configuration.
 
 Accédez au menu **Diagnostics > Authentication**.
 
-![Menu test authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-diagnostics-authentication.webp)
-
 Sélectionnez le serveur d'authentification **RADIUS**, entrez un nom d'utilisateur et son mot de passe configurés dans FreeRADIUS, puis cliquez sur **Test**.
-
-![Test authentification FreeRADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/Pfsense-Freeradius-authentication-test.webp)
 
 Si le test réussit, vous devriez voir ce message :
 
-![Test réussi](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-active-directory-login-test.webp)
-
-### Étape 4 : Créer un groupe d'autorisation
-
-Accédez au menu **System > User Manager**, puis à l'onglet **Groups** et cliquez sur **Add**.
-
-![Gestionnaire de groupes](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-group-manager.webp)
-
-Effectuez la configuration suivante :
-
-**Group name:** pfsense-admin  
-**Scope:** Remote  
-**Description:** Groupe FreeRADIUS
-
-![Création du groupe](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-freeradius-group.webp)
-
-**Important :** Le nom du groupe **pfsense-admin** doit correspondre exactement à la valeur **Class** définie dans le fichier `/etc/freeradius/3.0/users` de FreeRADIUS.
-
-Cliquez sur **Save**.
-
-### Étape 5 : Attribuer les privilèges au groupe
-
-Éditez le groupe **pfsense-admin** que vous venez de créer.
-
-Dans la section **Assigned Privileges**, cliquez sur **Add** et sélectionnez :
-
-**WebCfg - All pages**
-
-![Permissions du groupe](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-active-directory-group-permission.webp)
-
-Cette permission accorde un accès administrateur complet à l'interface web de pfSense.
-
-Cliquez sur **Save** pour enregistrer.
-
-### Étape 6 : Activer l'authentification RADIUS
-
-Accédez au menu **System > User Manager**, puis à l'onglet **Settings**.
-
-![Menu paramètres d'authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-authentication-settings-menu.webp)
-
-Dans **Authentication Server**, sélectionnez votre serveur **RADIUS**.
-
-![Activation RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-enable-radius-authentication-freeradius.webp)
-
-Cliquez sur **Save & Test**.
-
-### Étape 7 : Test de connexion
-
-Déconnectez-vous de l'interface pfSense.
-
-Tentez une nouvelle connexion en utilisant les identifiants configurés dans FreeRADIUS :
-
-**Username:** admin  
-**Password:** [Le mot de passe configuré dans FreeRADIUS]
-
-![Connexion pfSense](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/Pfsense-login.webp)
-
-Si la connexion réussit, votre authentification RADIUS fonctionne correctement.
+**User user authenticated successfully. This user is a member of groups:**
 
 ### Points de vérification
 
