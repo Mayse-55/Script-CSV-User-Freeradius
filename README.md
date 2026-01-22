@@ -346,15 +346,6 @@ Supprimés:                2 utilisateur(s)
 
 ## Sécurité
 
-### Protection du fichier CSV
-
-Le fichier CSV contient des mots de passe en clair. Protégez-le :
-
-```bash
-sudo chmod 600 /etc/script/login_mdp_internet.csv
-sudo chown root:root /etc/script/login_mdp_internet.csv
-```
-
 ### Sauvegarde avant synchronisation
 
 Avant toute synchronisation en mode --sync, effectuez une sauvegarde :
