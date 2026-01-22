@@ -216,6 +216,7 @@ sudo nano /etc/script/sync_radius.sh
 Copier le contenu suivant dans le fichier puis sauvegarder (Ctrl+O, Entrée, Ctrl+X) :
 
 ```bash
+  GNU nano 7.2                                                                                                                                                                     script/reload_csv_user.sh
 #!/bin/bash
 
 systemctl stop freeradius.service
@@ -230,8 +231,18 @@ for i in 5 4 3 2 1; do
     sleep 1
 done
 
+echo ""
+echo ""
+
+# synchronisation du csv
 cd /etc/script
 ./csvuser.sh login_mdp_internet.csv --sync
+
+echo ""
+
+# suppression des lignes vides du fichier users
+cd /etc/script
+./cleanlines.sh /etc/freeradius/3.0/users
 
 # Compteur avant redémarrage
 echo ""
@@ -248,6 +259,33 @@ Rendre le script exécutable :
 
 ```bash
 sudo chmod +x /etc/script/sync_radius.sh
+```
+
+### Étape 5 : Créer le script qui permet de supprimer les lignes vides du fichier **users**
+
+```bash
+sudo nano /etc/script/cleanlines.sh
+```
+
+```bash
+#!/bin/bash
+
+# Vérifie qu'un fichier est fourni
+if [ -z "$1" ]; then
+    echo "Usage: $0 fichier.txt"
+    exit 1
+fi
+
+FILE="$1"
+
+# Supprime les lignes vides (ou contenant seulement des espaces)
+sed -i '/^[[:space:]]*$/d' "$FILE"
+
+echo "Lignes vides supprimées dans : $FILE"
+```
+
+```bash
+sudo chmod +x /etc/script/cleanlines.sh
 ```
 
 ## Avertissement critique
