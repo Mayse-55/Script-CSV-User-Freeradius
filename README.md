@@ -52,20 +52,21 @@ echo ""
 TEMP_CSV_USERS=$(mktemp)
 while IFS=',' read -r username password || [ -n "$username" ]; do
     [ -z "$username" ] && continue
-    username=$(echo "$username" | xargs)
+    username="${username#"${username%%[![:space:]]*}"}"
+    username="${username%"${username##*[![:space:]]}"}"
     echo "$username" >> "$TEMP_CSV_USERS"
 done < "$CSV_FILE"
 
 # Mode synchronisation : supprimer les utilisateurs qui ne sont plus dans le CSV
 if [ "$SYNC_MODE" = "--sync" ]; then
     echo "=== Vérification des utilisateurs à supprimer ==="
-    
+
     # Créer un fichier temporaire pour les utilisateurs à supprimer
     TEMP_TO_DELETE=$(mktemp)
-    
+
     # Extraire tous les utilisateurs du fichier FreeRADIUS (ceux avec MD5-Password ou Cleartext-Password)
     grep -E "^[a-zA-Z0-9_-]+ (MD5-Password|Cleartext-Password) :=" "$FREERADIUS_USERS" | awk '{print $1}' > "$TEMP_TO_DELETE.all"
-    
+
     # Vérifier chaque utilisateur existant
     if [ -f "$TEMP_TO_DELETE.all" ]; then
         while read existing_user; do
@@ -75,24 +76,24 @@ if [ "$SYNC_MODE" = "--sync" ]; then
             fi
         done < "$TEMP_TO_DELETE.all"
     fi
-    
+
     # Supprimer les utilisateurs identifiés
     if [ -f "$TEMP_TO_DELETE" ] && [ -s "$TEMP_TO_DELETE" ]; then
         while read user_to_delete; do
-            echo "🗑 Suppression: $user_to_delete (absent du CSV)"
-            
+            echo "Suppression: $user_to_delete (absent du CSV)"
+
             # Supprimer l'utilisateur et ses attributs (jusqu'à la ligne vide suivante)
             sed -i "/^${user_to_delete} /,/^$/d" "$FREERADIUS_USERS"
-            
+
             DELETED=$((DELETED + 1))
         done < "$TEMP_TO_DELETE"
     else
         echo "✓ Aucun utilisateur à supprimer"
     fi
-    
+
     # Nettoyer les fichiers temporaires
     rm -f "$TEMP_TO_DELETE" "$TEMP_TO_DELETE.all"
-    
+
     echo ""
 fi
 
@@ -103,28 +104,31 @@ rm -f "$TEMP_CSV_USERS"
 while IFS=',' read -r username password || [ -n "$username" ]; do
     # Ignorer les lignes vides
     [ -z "$username" ] && continue
-    
+
     TOTAL=$((TOTAL + 1))
-    
+
     # Supprimer les espaces en début et fin
-    username=$(echo "$username" | xargs)
-    password=$(echo "$password" | xargs)
-    
+    username="${username#"${username%%[![:space:]]*}"}"
+    username="${username%"${username##*[![:space:]]}"}"
+
+    password="${password#"${password%%[![:space:]]*}"}"
+    password="${password%"${password##*[![:space:]]}"}"
+
     echo "[$TOTAL] Traitement: $username"
-    
+
     # Vérifier si l'utilisateur existe déjà
     if grep -q "^$username " "$FREERADIUS_USERS"; then
-        echo "  ⚠ Utilisateur déjà existant - ignoré"
+        echo "Utilisateur déjà existant - ignoré"
         SKIPPED=$((SKIPPED + 1))
         echo ""
         continue
     fi
-    
+
     echo "  → Génération du hash MD5..."
     # Générer le hash MD5 (format identique à echo -n "password" | md5sum)
     md5_hash=$(echo -n "$password" | md5sum | cut -d' ' -f1)
     echo "  → Hash: $md5_hash"
-    
+
     echo "  → Ajout au fichier FreeRADIUS..."
     # Ajouter l'utilisateur au fichier FreeRADIUS (format simple sans classe)
     cat >> "$FREERADIUS_USERS" << EOF
@@ -132,7 +136,7 @@ while IFS=',' read -r username password || [ -n "$username" ]; do
 $username MD5-Password := "$md5_hash"
 
 EOF
-    
+
     echo "  ✓ Utilisateur ajouté avec succès"
     ADDED=$((ADDED + 1))
     echo ""
