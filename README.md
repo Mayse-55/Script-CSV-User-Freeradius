@@ -1,7 +1,31 @@
-# Script-CSV-User-Freeradius
-Script qui permet d'ajouter les utilisateurs automatiquement dans le fichier client via csv 
+# Script CSV User FreeRADIUS
 
-Chiffrement en MD5 ( Penssée a éteindre le service avant )
+## Description
+
+Solution d'automatisation pour l'importation massive d'utilisateurs dans FreeRADIUS à partir d'un fichier CSV. Les mots de passe sont automatiquement chiffrés en MD5 et intégrés dans la configuration FreeRADIUS.
+
+## Prérequis
+
+- FreeRADIUS 3.0 ou supérieur
+- Accès root au serveur
+- Shell Bash
+
+## Installation
+
+### Étape 1 : Créer le répertoire de scripts
+
+```bash
+sudo mkdir -p /etc/script
+cd /etc/script
+```
+
+### Étape 2 : Créer le script principal d'importation
+
+```bash
+sudo nano /etc/script/csvuser.sh
+```
+
+Copier le contenu suivant dans le fichier puis sauvegarder (Ctrl+O, Entrée, Ctrl+X) :
 
 ```bash
 #!/bin/bash
@@ -157,3 +181,241 @@ echo "Redémarrez FreeRADIUS pour appliquer les changements:"
 echo "  systemctl restart freeradius"
 ```
 
+Rendre le script exécutable :
+
+```bash
+sudo chmod +x /etc/script/csvuser.sh
+```
+
+### Étape 3 : Créer le fichier CSV des utilisateurs
+
+```bash
+sudo nano /etc/script/login_mdp_internet.csv
+```
+
+Format requis (username,password) :
+
+```
+user1,password123
+user2,password456
+user3,password789
+```
+
+Sauvegarder le fichier (Ctrl+O, Entrée, Ctrl+X).
+
+### Étape 4 : Créer le script de synchronisation automatique
+
+```bash
+sudo nano /etc/script/sync_radius.sh
+```
+
+Copier le contenu suivant dans le fichier puis sauvegarder (Ctrl+O, Entrée, Ctrl+X) :
+
+```bash
+#!/bin/bash
+
+systemctl stop freeradius.service
+echo "╔════════════════════════════════════════╗"
+echo "║      Le service Radius est Stoppé      ║"
+echo "╚════════════════════════════════════════╝"
+echo ""
+
+# Compteur avant synchronisation
+for i in 5 4 3 2 1; do
+    echo -ne "Démarrage de la synchronisation du CSV dans : $i seconde(s)...\r"
+    sleep 1
+done
+
+cd /etc/script
+./csvuser.sh login_mdp_internet.csv --sync
+
+# Compteur avant redémarrage
+echo ""
+for i in 5 4 3 2 1; do
+    echo -ne "Redémarrage du service dans : $i seconde(s)...\r"
+    sleep 1
+done
+
+systemctl restart freeradius.service
+systemctl status freeradius.service
+```
+
+Rendre le script exécutable :
+
+```bash
+sudo chmod +x /etc/script/sync_radius.sh
+```
+
+## Avertissement critique
+
+**ATTENTION : Le service FreeRADIUS DOIT être arrêté avant toute modification du fichier users.**
+
+L'ajout d'utilisateurs pendant que le service est actif peut entraîner :
+- Corruption du fichier de configuration
+- Perte de données utilisateurs
+- Défaillance du service d'authentification
+- Incohérences dans la base d'utilisateurs
+- Nécessité de restauration depuis une sauvegarde
+
+**Toujours arrêter le service avant d'exécuter le script d'import.**
+
+## Utilisation
+
+### Méthode 1 : Synchronisation automatique (recommandée)
+
+Cette méthode gère automatiquement l'arrêt et le redémarrage du service :
+
+```bash
+sudo /etc/script/sync_radius.sh
+```
+
+**Déroulement automatique :**
+1. Arrêt du service FreeRADIUS
+2. Pause de 5 secondes (compte à rebours visible)
+3. Synchronisation des utilisateurs depuis le CSV
+4. Pause de 5 secondes avant redémarrage
+5. Redémarrage du service FreeRADIUS
+6. Affichage du statut final
+
+### Méthode 2 : Exécution manuelle
+
+#### Mode ajout simple (sans --sync)
+
+Ce mode ajoute uniquement les nouveaux utilisateurs présents dans le CSV.
+
+**Comportement :**
+- Les utilisateurs déjà existants dans FreeRADIUS sont ignorés
+- Les utilisateurs absents du CSV mais présents dans FreeRADIUS sont conservés
+- Aucune suppression n'est effectuée
+
+```bash
+sudo systemctl stop freeradius.service
+sudo /etc/script/csvuser.sh /etc/script/login_mdp_internet.csv
+sudo systemctl start freeradius.service
+```
+
+**Exemple de résultat :**
+
+```
+=== Résumé ===
+Total traité:             15 utilisateur(s)
+Ajoutés:                  10 utilisateur(s)
+Ignorés (déjà existants): 5 utilisateur(s)
+```
+
+#### Mode synchronisation (avec --sync)
+
+Ce mode synchronise complètement la base utilisateurs avec le contenu du CSV.
+
+**Comportement :**
+- Les nouveaux utilisateurs du CSV sont ajoutés
+- Les utilisateurs déjà existants sont conservés
+- Les utilisateurs absents du CSV mais présents dans FreeRADIUS sont SUPPRIMÉS
+
+**ATTENTION : Cette opération est irréversible. Les utilisateurs supprimés ne peuvent être récupérés que depuis une sauvegarde.**
+
+```bash
+sudo systemctl stop freeradius.service
+sudo /etc/script/csvuser.sh /etc/script/login_mdp_internet.csv --sync
+sudo systemctl start freeradius.service
+```
+
+**Exemple de résultat :**
+
+```
+=== Vérification des utilisateurs à supprimer ===
+Suppression: old_user1 (absent du CSV)
+Suppression: old_user2 (absent du CSV)
+
+=== Résumé ===
+Total traité:             15 utilisateur(s)
+Ajoutés:                  3 utilisateur(s)
+Ignorés (déjà existants): 12 utilisateur(s)
+Supprimés:                2 utilisateur(s)
+```
+
+## Différences entre les modes
+
+| Caractéristique | Sans --sync | Avec --sync |
+|----------------|-------------|-------------|
+| Ajout de nouveaux utilisateurs | Oui | Oui |
+| Conservation des existants | Oui | Oui |
+| Suppression des absents du CSV | Non | Oui |
+| Utilisation recommandée | Ajouts ponctuels | Synchronisation complète |
+| Risque de perte de données | Aucun | Élevé si CSV incomplet |
+
+## Sécurité
+
+### Protection du fichier CSV
+
+Le fichier CSV contient des mots de passe en clair. Protégez-le :
+
+```bash
+sudo chmod 600 /etc/script/login_mdp_internet.csv
+sudo chown root:root /etc/script/login_mdp_internet.csv
+```
+
+### Sauvegarde avant synchronisation
+
+Avant toute synchronisation en mode --sync, effectuez une sauvegarde :
+
+```bash
+sudo cp /etc/freeradius/3.0/users /etc/freeradius/3.0/users.backup.$(date +%Y%m%d_%H%M%S)
+```
+
+### Chiffrement MD5
+
+Les mots de passe sont automatiquement chiffrés en MD5 avant insertion :
+
+```
+Format stocké : username MD5-Password := "5f4dcc3b5aa765d61d8327deb882cf99"
+```
+
+## Vérification et dépannage
+
+### Vérifier le statut du service
+
+```bash
+sudo systemctl status freeradius.service
+```
+
+### Consulter les logs
+
+```bash
+sudo tail -f /var/log/freeradius/radius.log
+```
+
+### Tester l'authentification d'un utilisateur
+
+```bash
+sudo radtest username password localhost 0 testing123
+```
+
+### En cas de problème
+
+1. Arrêter le service : `sudo systemctl stop freeradius.service`
+2. Vérifier la syntaxe du fichier users : `sudo freeradius -X`
+3. Restaurer depuis la sauvegarde si nécessaire
+4. Redémarrer : `sudo systemctl start freeradius.service`
+
+## Structure des fichiers
+
+```
+/etc/script/
+├── csvuser.sh                    # Script d'import CSV
+├── sync_radius.sh                # Script de synchronisation automatique
+└── login_mdp_internet.csv        # Base utilisateurs
+
+/etc/freeradius/3.0/
+└── users                         # Fichier de configuration modifié
+```
+
+## Bonnes pratiques
+
+1. Toujours arrêter le service avant modification
+2. Effectuer des sauvegardes régulières du fichier users
+3. Tester sur un environnement de développement avant production
+4. Utiliser le mode --sync uniquement quand nécessaire
+5. Vérifier le fichier CSV avant exécution
+6. Consulter les logs après chaque modification
+7. Maintenir un historique des sauvegardes
