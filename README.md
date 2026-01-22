@@ -267,6 +267,8 @@ sudo chmod +x /etc/script/sync_radius.sh
 sudo nano /etc/script/cleanlines.sh
 ```
 
+Copier le contenu suivant dans le fichier puis sauvegarder (Ctrl+O, Entrée, Ctrl+X) :
+
 ```bash
 #!/bin/bash
 
@@ -283,6 +285,8 @@ sed -i '/^[[:space:]]*$/d' "$FILE"
 
 echo "Lignes vides supprimées dans : $FILE"
 ```
+
+Rendre le script exécutable :
 
 ```bash
 sudo chmod +x /etc/script/cleanlines.sh
