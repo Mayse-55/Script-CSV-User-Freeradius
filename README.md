@@ -136,7 +136,6 @@ while IFS=',' read -r username password || [ -n "$username" ]; do
     cat >> "$FREERADIUS_USERS" << EOF
 
 $username MD5-Password := "$md5_hash"
-
 EOF
 
     echo "  ✓ Utilisateur ajouté avec succès"
