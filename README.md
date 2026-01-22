@@ -432,7 +432,7 @@ Connectez-vous à l'interface web de pfSense et accédez au menu :
 
 Cliquez sur le bouton **Add** pour ajouter un nouveau serveur d'authentification.
 
-![Écran des serveurs d'authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-authentication-servers.webp)
+<img width="1143" height="851" alt="image" src="https://github.com/user-attachments/assets/beb66308-2b22-499b-bb3d-9fc01e28dc60" />
 
 ### Étape 2 : Configuration du serveur RADIUS
 
