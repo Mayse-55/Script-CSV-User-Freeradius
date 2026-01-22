@@ -61,53 +61,41 @@ done < "$CSV_FILE"
 if [ "$SYNC_MODE" = "--sync" ]; then
     echo "=== Vérification des utilisateurs à supprimer ==="
 
-    # Créer un fichier temporaire pour les utilisateurs à supprimer
     TEMP_TO_DELETE=$(mktemp)
 
-    # Extraire tous les utilisateurs du fichier FreeRADIUS (ceux avec MD5-Password ou Cleartext-Password)
-    grep -E "^[a-zA-Z0-9_-]+ (MD5-Password|Cleartext-Password) :=" "$FREERADIUS_USERS" | awk '{print $1}' > "$TEMP_TO_DELETE.all"
+    # Extraire tous les utilisateurs du fichier FreeRADIUS (MD5-Password ou Cleartext-Password)
+    grep -E "^[a-zA-Z0-9._-]+ (MD5-Password|Cleartext-Password) :=" "$FREERADIUS_USERS" | awk '{print $1}' > "$TEMP_TO_DELETE.all"
 
-    # Vérifier chaque utilisateur existant
     if [ -f "$TEMP_TO_DELETE.all" ]; then
         while read existing_user; do
-            # Vérifier si l'utilisateur existe dans le CSV
             if ! grep -q "^${existing_user}$" "$TEMP_CSV_USERS"; then
                 echo "$existing_user" >> "$TEMP_TO_DELETE"
             fi
         done < "$TEMP_TO_DELETE.all"
     fi
 
-    # Supprimer les utilisateurs identifiés
     if [ -f "$TEMP_TO_DELETE" ] && [ -s "$TEMP_TO_DELETE" ]; then
         while read user_to_delete; do
             echo "Suppression: $user_to_delete (absent du CSV)"
-
-            # Supprimer l'utilisateur et ses attributs (jusqu'à la ligne vide suivante)
             sed -i "/^${user_to_delete} /,/^$/d" "$FREERADIUS_USERS"
-
             DELETED=$((DELETED + 1))
         done < "$TEMP_TO_DELETE"
     else
         echo "✓ Aucun utilisateur à supprimer"
     fi
 
-    # Nettoyer les fichiers temporaires
     rm -f "$TEMP_TO_DELETE" "$TEMP_TO_DELETE.all"
-
     echo ""
 fi
 
-# Nettoyer le fichier temporaire
 rm -f "$TEMP_CSV_USERS"
 
 # Lecture du CSV et traitement ligne par ligne
 while IFS=',' read -r username password || [ -n "$username" ]; do
-    # Ignorer les lignes vides
     [ -z "$username" ] && continue
 
     TOTAL=$((TOTAL + 1))
 
-    # Supprimer les espaces en début et fin
     username="${username#"${username%%[![:space:]]*}"}"
     username="${username%"${username##*[![:space:]]}"}"
 
@@ -116,7 +104,6 @@ while IFS=',' read -r username password || [ -n "$username" ]; do
 
     echo "[$TOTAL] Traitement: $username"
 
-    # Vérifier si l'utilisateur existe déjà
     if grep -q "^$username " "$FREERADIUS_USERS"; then
         echo "Utilisateur déjà existant - ignoré"
         SKIPPED=$((SKIPPED + 1))
@@ -124,16 +111,10 @@ while IFS=',' read -r username password || [ -n "$username" ]; do
         continue
     fi
 
-    echo "  → Génération du hash MD5..."
-    # Générer le hash MD5 (format identique à echo -n "password" | md5sum)
-    md5_hash=$(echo -n "$password" | md5sum | cut -d' ' -f1)
-    echo "  → Hash: $md5_hash"
-
-    echo "  → Ajout au fichier FreeRADIUS..."
-    # Ajouter l'utilisateur au fichier FreeRADIUS (format simple sans classe)
+    echo "  → Ajout au fichier FreeRADIUS (Cleartext-Password)..."
     cat >> "$FREERADIUS_USERS" << EOF
 
-$username MD5-Password := "$md5_hash"
+$username Cleartext-Password := "$password"
 
 EOF
 
