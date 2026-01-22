@@ -91,13 +91,13 @@ if [ "$SYNC_MODE" = "--sync" ]; then
     TEMP_TO_DELETE=$(mktemp)
 
     # Extraire tous les utilisateurs du fichier FreeRADIUS (ceux avec MD5-Password ou Cleartext-Password)
-    grep -E "^[a-zA-Z0-9_-]+ (MD5-Password|Cleartext-Password) :=" "$FREERADIUS_USERS" | awk '{print $1}' > "$TEMP_TO_DELETE.all"
+    grep -E "^[a-zA-Z0-9_.-]+ (MD5-Password|Cleartext-Password) :=" "$FREERADIUS_USERS" | awk '{print $1}' > "$TEMP_TO_DELETE.all"
 
     # Vérifier chaque utilisateur existant
-    if [ -f "$TEMP_TO_DELETE.all" ]; then
+    if [ -f "$TEMP_TO_DELETE.all" ] && [ -s "$TEMP_TO_DELETE.all" ]; then
         while read existing_user; do
             # Vérifier si l'utilisateur existe dans le CSV
-            if ! grep -q "^${existing_user}$" "$TEMP_CSV_USERS"; then
+            if ! grep -Fxq "${existing_user}" "$TEMP_CSV_USERS"; then
                 echo "$existing_user" >> "$TEMP_TO_DELETE"
             fi
         done < "$TEMP_TO_DELETE.all"
@@ -108,8 +108,11 @@ if [ "$SYNC_MODE" = "--sync" ]; then
         while read user_to_delete; do
             echo "Suppression: $user_to_delete (absent du CSV)"
 
-            # Supprimer l'utilisateur et ses attributs (jusqu'à la ligne vide suivante)
-            sed -i "/^${user_to_delete} /,/^$/d" "$FREERADIUS_USERS"
+            # Échapper les caractères spéciaux pour sed
+            escaped_user=$(printf '%s\n' "$user_to_delete" | sed 's/[[\.*^$/]/\\&/g')
+            
+            # Supprimer l'utilisateur et la ligne vide qui suit
+            sed -i "/^${escaped_user} MD5-Password :=/d; /^${escaped_user} Cleartext-Password :=/d" "$FREERADIUS_USERS"
 
             DELETED=$((DELETED + 1))
         done < "$TEMP_TO_DELETE"
