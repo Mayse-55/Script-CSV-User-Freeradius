@@ -66,6 +66,7 @@ DELETED=0
 TOTAL=0
 
 echo "=== Traitement du fichier CSV ==="
+echo ""
 echo "Fichier: $CSV_FILE"
 if [ "$SYNC_MODE" = "--sync" ]; then
     echo "Mode: SYNCHRONISATION (suppression des utilisateurs absents du CSV)"
