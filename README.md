@@ -346,6 +346,15 @@ Supprimés:                2 utilisateur(s)
 
 ## Sécurité
 
+### Protection du fichier CSV
+
+Le fichier CSV contient des mots de passe en clair. Protégez-le :
+
+```bash
+sudo chmod 600 /etc/script/login_mdp_internet.csv
+sudo chown root:root /etc/script/login_mdp_internet.csv
+```
+
 ### Sauvegarde avant synchronisation
 
 Avant toute synchronisation en mode --sync, effectuez une sauvegarde :
@@ -410,3 +419,124 @@ sudo radtest username password localhost 0 testing123
 5. Vérifier le fichier CSV avant exécution
 6. Consulter les logs après chaque modification
 7. Maintenir un historique des sauvegardes
+
+## Configuration pfSense pour l'authentification RADIUS
+
+Une fois FreeRADIUS configuré avec vos utilisateurs, vous pouvez intégrer l'authentification RADIUS dans pfSense.
+
+### Étape 1 : Ajouter le serveur RADIUS dans pfSense
+
+Connectez-vous à l'interface web de pfSense et accédez au menu :
+
+**System > User Manager > Authentication Servers**
+
+Cliquez sur le bouton **Add** pour ajouter un nouveau serveur d'authentification.
+
+![Écran des serveurs d'authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-authentication-servers.webp)
+
+### Étape 2 : Configuration du serveur RADIUS
+
+Dans la zone **Server Settings**, effectuez la configuration suivante :
+
+**Descriptive name:** RADIUS  
+**Type:** RADIUS
+
+![Configuration serveur RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-freeradius.webp)
+
+Dans la zone **RADIUS Server Settings**, effectuez la configuration suivante :
+
+**Protocol:** PAP  
+**Hostname or IP address:** [Adresse IP de votre serveur FreeRADIUS]  
+**Shared Secret:** [Le secret partagé configuré dans clients.conf]  
+**Services offered:** Authentication and Accounting  
+**Authentication port:** 1812  
+**Accounting port:** 1813  
+**Authentication Timeout:** 5
+
+![Paramètres du serveur RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-radius-server-settings.webp)
+
+**Important :** Remplacez l'adresse IP par celle de votre serveur FreeRADIUS et le secret partagé par celui que vous avez défini dans `/etc/freeradius/3.0/clients.conf`.
+
+Cliquez sur **Save** pour enregistrer la configuration.
+
+### Étape 3 : Tester l'authentification RADIUS
+
+Accédez au menu **Diagnostics > Authentication**.
+
+![Menu test authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-diagnostics-authentication.webp)
+
+Sélectionnez le serveur d'authentification **RADIUS**, entrez un nom d'utilisateur et son mot de passe configurés dans FreeRADIUS, puis cliquez sur **Test**.
+
+![Test authentification FreeRADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/Pfsense-Freeradius-authentication-test.webp)
+
+Si le test réussit, vous devriez voir ce message :
+
+![Test réussi](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-active-directory-login-test.webp)
+
+### Étape 4 : Créer un groupe d'autorisation
+
+Accédez au menu **System > User Manager**, puis à l'onglet **Groups** et cliquez sur **Add**.
+
+![Gestionnaire de groupes](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-group-manager.webp)
+
+Effectuez la configuration suivante :
+
+**Group name:** pfsense-admin  
+**Scope:** Remote  
+**Description:** Groupe FreeRADIUS
+
+![Création du groupe](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-freeradius-group.webp)
+
+**Important :** Le nom du groupe **pfsense-admin** doit correspondre exactement à la valeur **Class** définie dans le fichier `/etc/freeradius/3.0/users` de FreeRADIUS.
+
+Cliquez sur **Save**.
+
+### Étape 5 : Attribuer les privilèges au groupe
+
+Éditez le groupe **pfsense-admin** que vous venez de créer.
+
+Dans la section **Assigned Privileges**, cliquez sur **Add** et sélectionnez :
+
+**WebCfg - All pages**
+
+![Permissions du groupe](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-active-directory-group-permission.webp)
+
+Cette permission accorde un accès administrateur complet à l'interface web de pfSense.
+
+Cliquez sur **Save** pour enregistrer.
+
+### Étape 6 : Activer l'authentification RADIUS
+
+Accédez au menu **System > User Manager**, puis à l'onglet **Settings**.
+
+![Menu paramètres d'authentification](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/pfsense-authentication-settings-menu.webp)
+
+Dans **Authentication Server**, sélectionnez votre serveur **RADIUS**.
+
+![Activation RADIUS](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/10/pfsense-enable-radius-authentication-freeradius.webp)
+
+Cliquez sur **Save & Test**.
+
+### Étape 7 : Test de connexion
+
+Déconnectez-vous de l'interface pfSense.
+
+Tentez une nouvelle connexion en utilisant les identifiants configurés dans FreeRADIUS :
+
+**Username:** admin  
+**Password:** [Le mot de passe configuré dans FreeRADIUS]
+
+![Connexion pfSense](https://d1ny9casiyy5u5.cloudfront.net/wp-content/uploads/2019/09/Pfsense-login.webp)
+
+Si la connexion réussit, votre authentification RADIUS fonctionne correctement.
+
+### Points de vérification
+
+**En cas de problème de connexion, vérifiez :**
+
+1. Le service FreeRADIUS est démarré : `systemctl status freeradius.service`
+2. L'adresse IP dans clients.conf correspond à l'IP de pfSense
+3. Le secret partagé est identique dans clients.conf et dans pfSense
+4. Le nom du groupe dans pfSense correspond exactement à la valeur Class dans users
+5. Les logs FreeRADIUS : `tail -f /var/log/freeradius/radius.log`
+6. Le port 1812 est accessible depuis pfSense vers le serveur FreeRADIUS
