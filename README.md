@@ -118,7 +118,7 @@ if [ "$SYNC_MODE" = "--sync" ]; then
             DELETED=$((DELETED + 1))
         done < "$TEMP_TO_DELETE"
     else
-        echo "✓ Aucun utilisateur à supprimer"
+        echo "Aucun utilisateur à supprimer"
     fi
 
     # Nettoyer les fichiers temporaires
