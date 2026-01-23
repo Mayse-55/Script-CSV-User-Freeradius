@@ -396,6 +396,10 @@ Supprimés:                2 utilisateur(s)
 
 Le fichier CSV contient des mots de passe en clair. Protégez-le :
 
+Pour une sécurité maximale, il est préférable de supprimer le CSV du serveur.
+
+ou 
+ 
 ```bash
 sudo chmod 600 /etc/script/login_mdp_internet.csv
 sudo chown root:root /etc/script/login_mdp_internet.csv
