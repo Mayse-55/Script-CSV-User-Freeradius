@@ -394,13 +394,18 @@ Supprimés:                2 utilisateur(s)
 
 ### Protection du fichier CSV
 
-Le fichier CSV contient des mots de passe en clair. Protégez-le :
+**IMPORTANT : Le fichier CSV contient des identifiants sensibles en clair.**
 
-Pour une sécurité maximale, il est préférable de supprimer le CSV du serveur.
-
-ou 
- 
+#### Option recommandée : Suppression après utilisation
+Pour une sécurité maximale, supprimez le fichier CSV une fois les comptes créés :
 ```bash
+sudo rm /etc/script/login_mdp_internet.csv
+```
+
+#### Alternative : Restriction d'accès stricte
+Si vous devez conserver le fichier, appliquez des permissions restrictives :
+```bash
+# Accès en lecture/écriture pour root uniquement
 sudo chmod 600 /etc/script/login_mdp_internet.csv
 sudo chown root:root /etc/script/login_mdp_internet.csv
 ```
