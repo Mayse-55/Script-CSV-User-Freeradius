@@ -533,4 +533,15 @@ Si le test réussit, vous devriez voir ce message :
 
 ---
 
-**Documentation réalisée par Nathaël Polnecq**
+## Licence
+
+Cette documentation est sous licence [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.fr).
+
+Vous êtes libre de :
+- Partager — copier, distribuer et communiquer le matériel
+- Adapter — remixer, transformer et créer à partir du matériel pour toute utilisation, y compris commerciale
+
+Selon les conditions suivantes :
+- Attribution — Vous devez créditer l'œuvre, intégrer un lien vers la licence et indiquer si des modifications ont été effectuées.
+
+© 2026 Nathaël Polnecq
