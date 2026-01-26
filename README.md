@@ -530,3 +530,7 @@ Si le test réussit, vous devriez voir ce message :
 4. Le nom du groupe dans pfSense correspond exactement à la valeur Class dans users
 5. Les logs FreeRADIUS : `tail -f /var/log/freeradius/radius.log`
 6. Le port 1812 est accessible depuis pfSense vers le serveur FreeRADIUS
+
+---
+
+**Documentation réalisée par Nathaël Polnecq**
